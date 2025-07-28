@@ -1,0 +1,36 @@
+name: Deploy Blnk to Azure
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Login to ACR
+      run: |
+        echo ${{ secrets.REGISTRY_PASSWORD }} | docker login ${{ secrets.REGISTRY_LOGIN }} -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin
+
+    - name: Build and Push Docker Image
+      run: |
+        docker build -t ${{ secrets.REGISTRY_LOGIN }}/blnk:latest .
+        docker push ${{ secrets.REGISTRY_LOGIN }}/blnk:latest
+
+    - name: Deploy to Azure Container App
+      uses: azure/container-apps-deploy-action@v1
+      with:
+        acrName: blnkacr
+        containerAppName: ca-blnk-server-prod
+        resourceGroup: rg-blnk-prod-we
+        imageToDeploy: ${{ secrets.REGISTRY_LOGIN }}/blnk:latest
