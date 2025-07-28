@@ -26,7 +26,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           push: true
-          tags: blnkcr.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_dac0f0d637b24cceb83cabd056fed575 }}/blnk:${{ github.sha }}
+          tags: blnkacr.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_dac0f0d637b24cceb83cabd056fed575 }}/blnk:${{ github.sha }}
           file: ./Dockerfile
 
     deploy:
