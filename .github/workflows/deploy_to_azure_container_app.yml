@@ -6,31 +6,38 @@ on:
       - main
 
 jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
+    build:
+      runs-on: 'ubuntu-latest'
+  
+      steps:
+      - uses: actions/checkout@v2
+  
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+  
+      - name: Log in to registry
+        uses: docker/login-action@v2
+        with:
+          registry: https://blnkacr.azurecr.io/
+          username: ${{ secrets.AzureAppService_ContainerUsername_dac0f0d637b24cceb83cabd056fed575 }}
+          password: ${{ secrets.AzureAppService_ContainerPassword_2845d847730c45c9b69371477d9c7ad1 }}
+  
+      - name: Build and push container image to registry
+        uses: docker/build-push-action@v3
+        with:
+          push: true
+          tags: blnkcr.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_dac0f0d637b24cceb83cabd056fed575 }}/blnk:${{ github.sha }}
+          file: ./Dockerfile
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Login to Azure
-      uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-    - name: Login to ACR
-      run: |
-        echo ${{ secrets.REGISTRY_PASSWORD }} | docker login ${{ secrets.REGISTRY_LOGIN }} -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin
-
-    - name: Build and Push Docker Image
-      run: |
-        docker build -t ${{ secrets.REGISTRY_LOGIN }}/blnk:latest .
-        docker push ${{ secrets.REGISTRY_LOGIN }}/blnk:latest
-
-    - name: Deploy to Azure Container App
-      uses: azure/container-apps-deploy-action@v1
-      with:
-        acrName: blnkacr
-        containerAppName: ca-blnk-server-prod
-        resourceGroup: rg-blnk-prod-we
-        imageToDeploy: ${{ secrets.REGISTRY_LOGIN }}/blnk:latest
+    deploy:
+      runs-on: ubuntu-latest
+      needs: build
+  
+      steps:
+      - name: Deploy to Azure Container App
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          acrName: blnkacr
+          containerAppName: blnk-server
+          resourceGroup: rg-blnk-core-dev
+          imageToDeploy: 'blnkacr.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_dac0f0d637b24cceb83cabd056fed575 }}/blnk:${{ github.sha }}'
