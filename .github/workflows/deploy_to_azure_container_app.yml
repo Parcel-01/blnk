@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-    build:
+    build-and-deploy:
       runs-on: 'ubuntu-latest'
   
       steps:
@@ -29,15 +29,15 @@ jobs:
           tags: blnkacr.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_dac0f0d637b24cceb83cabd056fed575 }}/blnk:${{ github.sha }}
           file: ./Dockerfile
 
-    deploy:
-      runs-on: ubuntu-latest
-      needs: build
-  
-      steps:
+      - name: Login via Azure CLI
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+            
       - name: Deploy to Azure Container App
         uses: azure/container-apps-deploy-action@v1
         with:
           acrName: blnkacr
           containerAppName: blnk-server
           resourceGroup: rg-blnk-core-dev
-          imageToDeploy: 'blnkacr.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_dac0f0d637b24cceb83cabd056fed575 }}/blnk:${{ github.sha }}'
+          imageToDeploy: blnkacr.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_dac0f0d637b24cceb83cabd056fed575 }}/blnk:${{ github.sha }}
